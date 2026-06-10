@@ -1,0 +1,6 @@
+{
+  "name": "SAM.gov Entity Lookup",
+  "description": "A high-performance exploratory search portal for looking up, filtering, and debugging SAM.gov registered and ID-assigned entities with physical addresses, NAICS certifications, and active federal exclusions",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
