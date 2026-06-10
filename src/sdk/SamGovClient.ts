@@ -31,6 +31,14 @@ export interface SamGovSearchOptions {
    */
   zip?: string;
   /**
+   * Optional status: 'Active', 'Expired', 'Inactive', 'ID Assigned', or 'All'
+   */
+  status?: string;
+  /**
+   * Optional includeSections: comma-separated list of GSA sections to retrieve (e.g., 'entityRegistration,coreData')
+   */
+  includeSections?: string;
+  /**
    * The page offset to return (0-indexed)
    */
   page?: number | string;
@@ -61,7 +69,26 @@ export class SamGovClient {
 
     const gsaParams = new URLSearchParams();
     gsaParams.append("api_key", this.apiKey);
-    gsaParams.append("includeSections", "entityRegistration,coreData,assertions,repsAndCerts");
+
+    // Default to 'entityRegistration,coreData' to include entities with limited registrations (like ID Assigned).
+    // If we request assertions or repsAndCerts, unregistered/ID Assigned ones are filtered out by the GSA REST rules.
+    const statusVal = options.status || "All";
+    let isRegistered = "ALL";
+    if (statusVal === "ID Assigned") {
+      isRegistered = "N";
+    } else if (statusVal === "Active" || statusVal === "Inactive" || statusVal === "Expired") {
+      isRegistered = "Y";
+    }
+
+    gsaParams.append("isRegistered", isRegistered);
+
+    // Default includeSections based on isRegistered parameter.
+    // If we request isRegistered=N or ALL, requesting 'coreData' can prompt GSA
+    // to filter out unregistered (ID Assigned) entities entirely.
+    // Therefore, we use only 'entityRegistration' for unregistered entities.
+    const defaultSections = isRegistered === "Y" ? "entityRegistration,coreData" : "entityRegistration";
+    const includeSections = options.includeSections || defaultSections;
+    gsaParams.append("includeSections", includeSections);
 
     if (options.uei) {
       gsaParams.append("ueiSAM", options.uei.trim().toUpperCase());
@@ -74,6 +101,13 @@ export class SamGovClient {
     }
     if (options.zip) {
       gsaParams.append("zipCode", options.zip.trim());
+    }
+
+    // Configure registrationStatus queries
+    // Only pass registrationStatus parameter when filtering for registered status types.
+    // Doing so prevents GSA from filtering out unregistered (ID Assigned) entities.
+    if (isRegistered === "Y" && options.status && options.status !== "All") {
+      gsaParams.append("registrationStatus", options.status);
     }
 
     const pageNum = parseInt(String(options.page || "0"), 10) || 0;
@@ -105,21 +139,26 @@ export class SamGovClient {
         item.legalBusinessName ||
         "Unknown legal business name";
       const dbaName = item.entityRegistration?.dbaName || undefined;
-      let status: "Active" | "Inactive" | "Expired" = "Active";
+      let status: "Active" | "Inactive" | "Expired" | "ID Assigned" = "Active";
 
       const registrationStatus = item.entityRegistration?.registrationStatus || "";
       if (registrationStatus.toLowerCase().includes("expired")) {
         status = "Expired";
       } else if (registrationStatus.toLowerCase().includes("inactive")) {
         status = "Inactive";
+      } else if (registrationStatus.toLowerCase().includes("active")) {
+        status = "Active";
+      } else {
+        // If registrationStatus is missing or blank (standard for unregistered/ID Assigned), or contains "assigned"
+        status = "ID Assigned";
       }
 
       const registrationDate = item.entityRegistration?.registrationDate || "";
       const activationDate = item.entityRegistration?.activationDate || "";
       const expirationDate = item.entityRegistration?.expirationDate || "";
 
-      // physical Address mapping
-      const pAddr = item.coreData?.physicalAddress || {};
+      // physical Address mapping with safe fallback to entityRegistration physical address
+      const pAddr = item.coreData?.physicalAddress || item.entityRegistration?.physicalAddress || {};
       const physicalAddress = {
         addressLine1: pAddr.addressLine1 || "",
         addressLine2: pAddr.addressLine2 || undefined,

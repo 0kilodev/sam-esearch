@@ -75,7 +75,7 @@ export interface SAMEntity {
   duns?: string;
   legalBusinessName: string;
   dbaName?: string;
-  status: 'Active' | 'Inactive' | 'Expired';
+  status: 'Active' | 'Inactive' | 'Expired' | 'ID Assigned';
   registrationDate: string;
   activationDate: string;
   expirationDate: string;

@@ -129,6 +129,7 @@ export default function App() {
               {selectedEntity ? (
                 <EntityDetail 
                   entity={selectedEntity} 
+                  apiKey={apiKey}
                   onClose={() => setSelectedEntity(null)} 
                 />
               ) : (

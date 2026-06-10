@@ -115,6 +115,7 @@ export default function SearchFilters({
               <option value="Active">Active Only</option>
               <option value="Inactive">Inactive Only</option>
               <option value="Expired">Expired Profiles</option>
+              <option value="ID Assigned">ID Assigned (No Contracts)</option>
             </select>
           </div>
         </div>

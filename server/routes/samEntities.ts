@@ -29,6 +29,8 @@ router.get("/entities", async (req: Request, res: Response) => {
       name,
       state,
       zip,
+      status,
+      includeSections,
       page = "0",
       limit = "10"
     } = req.query;
@@ -63,6 +65,8 @@ router.get("/entities", async (req: Request, res: Response) => {
       name: name ? String(name) : undefined,
       state: state ? String(state) : undefined,
       zip: zip ? String(zip) : undefined,
+      status: status ? String(status) : undefined,
+      includeSections: includeSections ? String(includeSections) : undefined,
       page: String(page),
       limit: String(limit)
     });
